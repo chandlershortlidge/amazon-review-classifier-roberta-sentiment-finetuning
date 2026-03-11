@@ -7,8 +7,9 @@ An NLP pipeline that classifies Amazon product review sentiment, clusters produc
 With thousands of reviews spread across multiple platforms, manually analyzing customer feedback is impractical. This project automates the process through three stages:
 
 1. **Sentiment Classification** - Classify reviews as positive, negative, or neutral using a pre-trained RoBERTa transformer model.
-2. **Product Category Clustering** - Group products into 6 meta-categories using sentence embeddings and K-Means clustering, refined by an LLM.
-3. **Blog Post Generation** - Summarize reviews into recommendation articles for each category using a local LLM (Ollama / Qwen 2.5).
+2. **Fine-Tuned Sentiment Model** - Fine-tune `roberta-base` on the balanced review dataset to significantly improve classification accuracy (64% → 83%).
+3. **Product Category Clustering** - Group products into 6 meta-categories. Initial attempts with SentenceTransformer embeddings and K-Means produced poor clusters, so a local LLM (Ollama / Qwen 2.5) was used to classify products instead.
+4. **Blog Post Generation** - Summarize reviews into recommendation articles for each category using a local LLM (Ollama / Qwen 2.5).
 
 ## Dataset
 
@@ -32,7 +33,11 @@ Class Balancing (downsample to 1,206 per class)
     |                                       |
     v                                       v
 Sentiment Classification             Category Clustering
-(CardiffNLP RoBERTa)                 (SentenceTransformer + KMeans + Ollama)
+(CardiffNLP RoBERTa → 64%)           (SentenceTransformer + KMeans ✗)
+    |                                       |
+    v                                       v
+Fine-Tuning RoBERTa-base             LLM Classification
+(3 epochs → 83% accuracy)           (Ollama / Qwen 2.5 ✓)
     |                                       |
     v                                       v
 Classification Metrics               6 Meta-Categories
@@ -58,9 +63,22 @@ Model: `cardiffnlp/twitter-roberta-base-sentiment`
 | Positive | 0.65      | 0.91   | 0.76     |
 | **Overall Accuracy** | | | **64%** |
 
+### Fine-Tuned Sentiment Classification
+
+Model: `roberta-base` fine-tuned for 3 epochs on the balanced review dataset (70/30 train/test split, batch size 16)
+
+| Class    | Precision | Recall | F1-Score |
+|----------|-----------|--------|----------|
+| Negative | 0.84      | 0.85   | 0.85     |
+| Neutral  | 0.77      | 0.74   | 0.75     |
+| Positive | 0.89      | 0.91   | 0.90     |
+| **Overall Accuracy** | | | **83%** |
+
+Fine-tuning improved accuracy by **19 percentage points** over the pre-trained model, with the largest gains in neutral recall (26% → 74%) and negative precision (68% → 84%).
+
 ### Product Categories
 
-Products were clustered into 6 meta-categories:
+Initial clustering with SentenceTransformer embeddings and K-Means did not produce meaningful groupings. Products were instead classified into 6 meta-categories by the Qwen 2.5 LLM via Ollama:
 
 | Category | Description |
 |----------|-------------|
@@ -87,9 +105,9 @@ Output is saved to `notebooks/summaries.json`.
 |-----------|------|
 | Data processing | pandas, numpy |
 | Visualization | matplotlib, seaborn |
-| Sentiment model | `cardiffnlp/twitter-roberta-base-sentiment` (Hugging Face Transformers) |
-| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
-| Clustering | scikit-learn KMeans |
+| Sentiment model (baseline) | `cardiffnlp/twitter-roberta-base-sentiment` (Hugging Face Transformers) |
+| Sentiment model (fine-tuned) | `roberta-base` fine-tuned with Hugging Face Trainer |
+| Embeddings (attempted) | `sentence-transformers/all-MiniLM-L6-v2`, scikit-learn KMeans |
 | Category classification & blog generation | Ollama (Qwen 2.5) |
 | Evaluation | scikit-learn (classification_report, confusion_matrix) |
 
@@ -133,4 +151,4 @@ pip install pandas numpy matplotlib seaborn scikit-learn transformers sentence-t
 ## Notebooks
 
 - **main.ipynb** - End-to-end pipeline: data loading, preprocessing, sentiment classification, category clustering, and blog post generation.
-- **Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb** - Experimental notebook for fine-tuning a RoBERTa model on the balanced review dataset as an alternative to the pre-trained classifier.
+- **Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb** - Fine-tunes `roberta-base` on the balanced review dataset (3,618 reviews, 3 classes) for 3 epochs, achieving 83% accuracy vs 64% from the pre-trained classifier. Run on Google Colab.
