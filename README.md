@@ -1,5 +1,7 @@
 # Automated Customer Review Analysis
 
+[![tests](https://github.com/chandlershortlidge/project-dsai-business-case-automated-customer-reviews/actions/workflows/test.yml/badge.svg)](https://github.com/chandlershortlidge/project-dsai-business-case-automated-customer-reviews/actions/workflows/test.yml)
+
 An NLP pipeline that classifies Amazon product review sentiment, clusters products into meta-categories, and generates blog-style recommendation articles using generative AI.
 
 ## Project Overview
@@ -104,28 +106,45 @@ Output is saved to `notebooks/summaries.json`.
 | Component | Tool |
 |-----------|------|
 | Data processing | pandas, numpy |
-| Visualization | matplotlib, seaborn |
+| Visualization | matplotlib, seaborn, plotly |
 | Sentiment model (baseline) | `cardiffnlp/twitter-roberta-base-sentiment` (Hugging Face Transformers) |
 | Sentiment model (fine-tuned) | `roberta-base` fine-tuned with Hugging Face Trainer |
-| Embeddings (attempted) | `sentence-transformers/all-MiniLM-L6-v2`, scikit-learn KMeans |
 | Category classification & blog generation | Ollama (Qwen 2.5) |
+| Dashboard | Streamlit |
 | Evaluation | scikit-learn (classification_report, confusion_matrix) |
+| Lint / format / test | ruff, pytest |
+
+> SentenceTransformer + K-Means was tried for category clustering and abandoned — see [Design decisions](#design-decisions) below.
 
 ## Project Structure
 
 ```
 .
 ├── README.md
+├── LICENSE
+├── Makefile                              # install / test / lint / app / train
+├── pyproject.toml                        # ruff + pytest config
 ├── requirements.txt
-├── app.py                                # Streamlit dashboard
+├── app.py                                # Streamlit dashboard entry point
+├── review_dashboard.py                   # Pure helpers used by the dashboard
+├── src/
+│   ├── data.py                           # Loading, cleaning, label assignment, balancing
+│   ├── predict.py                        # Baseline sentiment, LLM category classification, blog generation
+│   └── train.py                          # RoBERTa fine-tuning (CLI: python -m src.train)
+├── tests/
+│   ├── fixtures/sample_reviews.csv
+│   ├── test_data.py
+│   └── test_review_dashboard.py
 ├── data/
 │   └── amazon-customer-reviews/          # Raw CSV files from Kaggle (gitignored)
 ├── notebooks/
-│   ├── main.ipynb                        # Full pipeline notebook
+│   ├── main.ipynb                        # Original exploratory pipeline
 │   ├── Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb  # Fine-tuning experiment (Colab)
 │   └── summaries.json                    # Generated blog post output
-└── .gitignore
+└── .github/workflows/test.yml            # Lint + pytest on push / PR
 ```
+
+The `src/` modules are the canonical pipeline code; `notebooks/main.ipynb` is the original exploratory pass and remains for reference.
 
 ## Setup & Usage
 
@@ -137,19 +156,30 @@ Output is saved to `notebooks/summaries.json`.
 ### Installation
 
 ```bash
-pip install -r requirements.txt
+make install            # pip install -r requirements.txt
 ollama pull qwen2.5
+```
+
+### Common commands
+
+```bash
+make test               # run the pytest suite
+make lint               # ruff check
+make format             # ruff format (writes changes)
+make app                # launch the Streamlit dashboard
+make train DATA=path/to/balanced_reviews.csv   # fine-tune RoBERTa
 ```
 
 ### Running the pipeline
 
 1. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/datafiniti/consumer-reviews-of-amazon-products/data) and place the CSV files in `data/amazon-customer-reviews/`.
-2. Open and run `notebooks/main.ipynb` from top to bottom. This produces `notebooks/amazon_sentiment_categories.csv` (the labelled dataset the dashboard reads) and `notebooks/summaries.json`.
+2. Run `notebooks/main.ipynb` end-to-end (or import from `src/data.py` and `src/predict.py` in your own script). This produces `notebooks/amazon_sentiment_categories.csv` (the labelled dataset the dashboard reads) and `notebooks/summaries.json`.
+3. Optional: fine-tune RoBERTa on the balanced dataset with `make train DATA=path/to/balanced_reviews.csv`. The Colab notebook is preserved for the original GPU-backed run.
 
 ### Running the dashboard
 
 ```bash
-streamlit run app.py
+make app
 ```
 
 The dashboard reads `notebooks/amazon_sentiment_categories.csv`, lets you switch between the six meta-categories, and can regenerate any category's blog summary on demand via Ollama. Generated summaries are persisted back to `notebooks/summaries.json`.
