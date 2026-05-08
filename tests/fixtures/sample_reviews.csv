@@ -1,0 +1,13 @@
+id,name,categories,primarycategories,reviews.rating,reviews.text,reviews.didpurchase,reviews.id,reviews.numhelpful,reviews.dorecommend
+1,Echo Dot,"Electronics,Smart Home",Electronics,5,Love it,,,,
+2,Echo Dot,"Electronics,Smart Home",Electronics,4,Pretty good,,,,
+3,Echo Dot,"Electronics,Smart Home",Electronics,3,It's okay,,,,
+4,Fire TV Stick,"Electronics,Streaming",Electronics,5,Excellent,,,,
+5,Fire TV Stick,"Electronics,Streaming",Electronics,2,Disappointing,,,,
+6,Fire TV Stick,"Electronics,Streaming",Electronics,1,Worst purchase ever,,,,
+7,Bad Cable,"Electronics,Cables",Electronics,1,Broke immediately,,,,
+8,Dog Crate,"Pet Supplies",Pet Supplies,5,Sturdy,,,,
+9,Dog Crate,"Pet Supplies",Pet Supplies,4,Good size,,,,
+10,Cat Litter Box,"Pet Supplies",Pet Supplies,3,Average,,,,
+11,Litter Genie,"Pet Supplies",Pet Supplies,2,Smells,,,,
+12,Litter Genie,"Pet Supplies",Pet Supplies,5,Works well,,,,
