@@ -6,6 +6,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from review_dashboard import category_key, get_top_n, get_worst
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -30,11 +32,6 @@ SENTIMENT_COLORS = {
 }
 
 
-def category_key(category: str) -> str:
-    """Normalise a category name to a dict key, e.g. 'Health & Beauty' -> 'health_beauty'."""
-    return category.lower().replace(" & ", "_").replace("&", "_").replace(" ", "_")
-
-
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
@@ -56,32 +53,8 @@ def save_summaries(summaries: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Analysis helpers
+# Chart helpers
 # ---------------------------------------------------------------------------
-def get_top_n(df: pd.DataFrame, category: str, n: int = 3) -> pd.DataFrame:
-    cat_df = df[df["meta_category"] == category]
-    return (
-        cat_df.groupby("name")
-        .agg(avg_rating=("reviews.rating", "mean"), num_reviews=("reviews.rating", "count"))
-        .sort_values("num_reviews", ascending=False)
-        .head(n)
-        .reset_index()
-        .rename(columns={"name": "Product", "avg_rating": "Avg Rating", "num_reviews": "# Reviews"})
-    )
-
-
-def get_worst(df: pd.DataFrame, category: str) -> pd.DataFrame:
-    cat_df = df[df["meta_category"] == category]
-    return (
-        cat_df.groupby("name")
-        .agg(avg_rating=("reviews.rating", "mean"), num_reviews=("reviews.rating", "count"))
-        .sort_values("avg_rating", ascending=True)
-        .head(1)
-        .reset_index()
-        .rename(columns={"name": "Product", "avg_rating": "Avg Rating", "num_reviews": "# Reviews"})
-    )
-
-
 def get_rating_chart(df: pd.DataFrame, category: str):
     cat_df = df[df["meta_category"] == category]
     product_ratings = (
