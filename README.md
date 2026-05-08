@@ -116,12 +116,14 @@ Output is saved to `notebooks/summaries.json`.
 ```
 .
 ├── README.md
+├── requirements.txt
+├── app.py                                # Streamlit dashboard
 ├── data/
-│   └── amazon-customer-reviews/       # Raw CSV files from Kaggle
+│   └── amazon-customer-reviews/          # Raw CSV files from Kaggle (gitignored)
 ├── notebooks/
-│   ├── main.ipynb                     # Full pipeline notebook
-│   ├── Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb  # Fine-tuning experiment
-│   └── summaries.json                 # Generated blog post output
+│   ├── main.ipynb                        # Full pipeline notebook
+│   ├── Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb  # Fine-tuning experiment (Colab)
+│   └── summaries.json                    # Generated blog post output
 └── .gitignore
 ```
 
@@ -129,26 +131,49 @@ Output is saved to `notebooks/summaries.json`.
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.13 (the pinned versions in `requirements.txt` were tested here; older Pythons should work but may need adjusted pins)
 - [Ollama](https://ollama.com/) installed locally with the Qwen 2.5 model pulled
 
 ### Installation
 
 ```bash
-pip install pandas numpy matplotlib seaborn scikit-learn transformers sentence-transformers ollama
+pip install -r requirements.txt
+ollama pull qwen2.5
 ```
 
-### Running
+### Running the pipeline
 
 1. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/datafiniti/consumer-reviews-of-amazon-products/data) and place the CSV files in `data/amazon-customer-reviews/`.
-2. Pull the Qwen 2.5 model for Ollama:
-   ```bash
-   ollama pull qwen2.5
-   ```
-3. Open and run `notebooks/main.ipynb` from top to bottom.
-4. Generated blog summaries will be saved to `notebooks/summaries.json`.
+2. Open and run `notebooks/main.ipynb` from top to bottom. This produces `notebooks/amazon_sentiment_categories.csv` (the labelled dataset the dashboard reads) and `notebooks/summaries.json`.
+
+### Running the dashboard
+
+```bash
+streamlit run app.py
+```
+
+The dashboard reads `notebooks/amazon_sentiment_categories.csv`, lets you switch between the six meta-categories, and can regenerate any category's blog summary on demand via Ollama. Generated summaries are persisted back to `notebooks/summaries.json`.
 
 ## Notebooks
 
 - **main.ipynb** - End-to-end pipeline: data loading, preprocessing, sentiment classification, category clustering, and blog post generation.
 - **Amazon_Reviews_Fine_Tuning_Roberta_Base.ipynb** - Fine-tunes `roberta-base` on the balanced review dataset (3,618 reviews, 3 classes) for 3 epochs, achieving 83% accuracy vs 64% from the pre-trained classifier. Run on Google Colab.
+
+## Design decisions
+
+**Why local Ollama + Qwen 2.5 instead of a hosted API.** The reviews aren't actually sensitive, but keeping inference local meant no per-call cost, no data leaving the machine, and direct hands-on with running an open-weight model — which was also a course constraint. The trade-off is throughput: classifying ~28k products one-by-one through a local 7B model is slower than batching against a hosted API, and quality is below frontier models for nuanced summarisation.
+
+**Why fine-tune RoBERTa for sentiment instead of also using the LLM.** Sentiment was approached as a classical classification problem before the LLM was introduced into the stack. Fine-tuning `roberta-base` was the assignment; in hindsight, using Qwen 2.5 zero-shot would have been a reasonable baseline to compare against, and is listed as future work below.
+
+**Why drop K-Means clustering.** SentenceTransformer embeddings + K-Means on product names produced clusters that mixed unrelated products (e.g. tablets with batteries) and split obvious groups across multiple clusters. The K value sweep didn't fix it — the embeddings were too coarse for the granularity wanted. Asking the LLM to assign each product to one of six pre-defined meta-categories produced groupings that matched intuition and matched the original Amazon `categories` column on spot-checks across all six buckets.
+
+**How LLM category assignments were validated.** Cross-referenced against the original Amazon `categories` column on a sample. Not a formal accuracy number — listed as a limitation below.
+
+## Limitations & next steps
+
+- **No held-out test for category classification.** The LLM assignments were spot-checked against Amazon's own category strings, but there's no quantified accuracy. A small hand-labelled sample would give a real number.
+- **No LLM baseline for sentiment.** Qwen 2.5 zero-shot wasn't compared against fine-tuned RoBERTa. That comparison would tell you whether the fine-tune was actually worth the training step for this dataset.
+- **Single-run fine-tuning.** The 83% accuracy comes from one run with one seed. No cross-validation, no confidence interval.
+- **Class imbalance handled by downsampling.** Dropping reviews to balance classes throws away signal. Class weights or focal loss would be the more honest fix.
+- **Blog generation is unevaluated.** Output looks reasonable on inspection but there's no rubric or human eval scoring factuality vs. the underlying reviews.
+- **No tests.** Helpers in `app.py` (`get_top_n`, `get_worst`, `category_key`) are pure and easy to cover with pytest.
