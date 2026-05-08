@@ -1,1 +1,22 @@
+# Data
 *.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Environments / secrets
+.env
+.venv/
+venv/
+
+# Model artifacts
+fine_tuned_roberta/
+
+# OS
+.DS_Store
