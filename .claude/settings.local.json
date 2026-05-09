@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(grep -rn -E \"\\(api[_-]?key|secret|token|password|sk-[a-zA-Z0-9]{10,}\\)\" --include=\"*.py\" --include=\"*.ipynb\" --include=\"*.json\" --include=\"*.md\" .)",
+      "Bash(git rm *)",
+      "Bash(git commit *)",
+      "Bash(ruff check *)",
+      "Bash(jupyter nbconvert *)",
+      "Bash(make help *)",
+      "Bash(make lint *)"
     ]
   }
 }

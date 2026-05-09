@@ -6,6 +6,8 @@ An NLP pipeline that classifies Amazon product review sentiment, clusters produc
 
 ![dashboard](docs/dashboard.png)
 
+🤗 [Model on HuggingFace](https://huggingface.co/c-ram/roberta-amazon-reviews-sentiment)
+
 ## Project Overview
 
 With thousands of reviews spread across multiple platforms, manually analyzing customer feedback is impractical. This project automates the process through three stages:
