@@ -4,6 +4,8 @@
 
 An NLP pipeline that classifies Amazon product review sentiment, clusters products into meta-categories, and generates blog-style recommendation articles using generative AI.
 
+![dashboard](docs/dashboard.png)
+
 ## Project Overview
 
 With thousands of reviews spread across multiple platforms, manually analyzing customer feedback is impractical. This project automates the process through three stages:
